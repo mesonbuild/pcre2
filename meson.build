@@ -119,6 +119,8 @@ pcre2grep = executable('pcre2grep', ['src/pcre2grep.c'],
   c_args: config_h_defs + ['-DHAVE_CONFIG_H'],
   install: true)
 
+install_headers([pcre2_h, 'src/pcre2posix.h'])
+
 ########### pkg-config #############
 
 pkg = import('pkgconfig')
