@@ -1,5 +1,7 @@
 project('pcre2', 'c', version: '10.23', license: 'BSD-3')
 
+c_compiler = meson.get_compiler('c')
+
 pcre2_h = configure_file(input : 'src/pcre2.h.generic',
   output : 'pcre2.h',
   configuration : configuration_data())
@@ -43,11 +45,43 @@ sources = [
 
 includes = [include_directories('.'), include_directories('src')]
 
-config_h_defs = ['-DHAVE_INTTYPES_H', '-DHAVE_STRERROR',
-           '-DHAVE_LIMITS_H', '-DHAVE_MEMMOVE', '-DHAVE_STDINT_H', '-DHAVE_STDLIB_H',
-           '-DHAVE_STRING_H', '-DSTDC_HEADERS', '-DSUPPORT_PCRE2_8', '-DHAVE_UNISTD_H', '-DSUPPORT_UNICODE']
+check_headers = [
+  ['HAVE_INTTYPES_H', 'inttypes.h'],
+  ['HAVE_BZLIB_H', 'bzlib.h'],
+  ['HAVE_SYS_STAT_H', 'sys/stat.h'],
+  ['HAVE_SYS_TYPES_H', 'sys/types.h'],
+  ['HAVE_SYS_WAIT_H', 'sys/wait.h'],
+  ['HAVE_INTTYPES_H', 'inttypes.h'],
+  ['HAVE_DIRENT_H', 'dirent.h'],
+  ['HAVE_DLFCN_H', 'dlfcn.h'],
+  ['HAVE_LIMITS_H', 'limits.h'],
+  ['HAVE_STDINT_H', 'stdint.h'],
+  ['HAVE_STDLIB_H', 'stdlib.h'],
+  ['HAVE_STRING_H', 'string.h'],
+  ['HAVE_WINDOWS_H', 'windows.h'],
+  ['HAVE_UNISTD_H', 'unistd.h']
+]
+
+config_h_defs = []
+foreach h : check_headers
+  if c_compiler.has_header(h.get(1))
+    config_h_defs += ['-D' + h.get(0)]
+  endif
+endforeach
 
 
+check_funs = [
+  ['HAVE_STRERROR', 'strerror'],
+]
+
+foreach f : check_funs
+  if c_compiler.has_function(f.get(1))
+    config_h_defs += ['-D' + f.get(0)]
+  endif
+endforeach
+
+
+config_h_defs += ['-DHAVE_MEMMOVE', '-DSTDC_HEADERS', '-DSUPPORT_PCRE2_8', '-DSUPPORT_UNICODE']
 
 pcre2_8_lib = library('pcre2-8', sources,
   include_directories: includes,
@@ -113,7 +147,11 @@ pkg.generate(libraries : pcre2_32_lib,
 
 #### tests
 
-runtest = find_program('RunTest')
+if host_machine.system() == 'windows'
+  runtest = find_program('RunTest.bat')
+else
+  runtest = find_program('RunTest')
+endif
 test('RunTest', runtest,
   env : ['srcdir=@0@'.format(meson.current_source_dir())],
   workdir: meson.current_build_dir())
