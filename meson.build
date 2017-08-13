@@ -113,12 +113,6 @@ libpcre2_16 = declare_dependency(link_with: pcre2_16_lib,
 libpcre2_32 = declare_dependency(link_with: pcre2_32_lib,
   include_directories: includes)
 
-
-pcre2test = executable('pcre2test', ['src/pcre2test.c'],
-  include_directories: includes,
-  link_with: [pcre2_8_lib, pcre2_posix_lib, pcre2_16_lib, pcre2_32_lib],
-  c_args: config_h_defs + ['-DHAVE_CONFIG_H'])
-
 pcre2grep = executable('pcre2grep', ['src/pcre2grep.c'],
   include_directories: includes,
   link_with: [pcre2_8_lib],
@@ -147,12 +141,20 @@ pkg.generate(libraries : pcre2_32_lib,
 
 #### tests
 
-if host_machine.system() == 'windows'
-  runtest = find_program('RunTest.bat')
-else
-  runtest = find_program('RunTest')
+if not meson.is_cross_build() # wine wrappers are not bat-friendly, this would need better testing
+  pcre2test = executable('pcre2test', ['src/pcre2test.c'],
+    include_directories: includes,
+    link_with: [pcre2_8_lib, pcre2_posix_lib, pcre2_16_lib, pcre2_32_lib],
+    c_args: config_h_defs + ['-DHAVE_CONFIG_H'])
+
+  if host_machine.system() == 'windows'
+    runtest = find_program('RunTest.bat')
+  else
+    runtest = find_program('RunTest')
+  endif
+
+  test('RunTest', runtest,
+    env : ['srcdir=@0@'.format(meson.current_source_dir())],
+    workdir: meson.current_build_dir())
 endif
-test('RunTest', runtest,
-  env : ['srcdir=@0@'.format(meson.current_source_dir())],
-  workdir: meson.current_build_dir())
 
