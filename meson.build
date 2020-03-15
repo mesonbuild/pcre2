@@ -159,4 +159,3 @@ if not meson.is_cross_build() # wine wrappers are not bat-friendly, this would n
     env : ['srcdir=@0@'.format(meson.current_source_dir())],
     workdir: meson.current_build_dir())
 endif
-
